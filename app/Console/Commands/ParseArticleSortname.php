@@ -7,15 +7,16 @@ use App\Models\Year;
 use EasyWiki;
 use Illuminate\Console\Command;
 
-class ParseArticle extends Command
+class ParseArticleSortname extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'app:parse-article
+    protected $signature = 'app:parse-article-shortname
     {article : The title of the article to parse}
+    {--test : Test mode}
 
     ';
 
@@ -32,6 +33,7 @@ class ParseArticle extends Command
     public function handle()
     {
         $article = $this->argument( 'article' );
+        $test = $this->option('test');
         $api = new EasyWiki( 'https://en.wikipedia.org/w/api.php' );
         $wikitext = $api->getWikitext( $article );
 
@@ -72,7 +74,7 @@ class ParseArticle extends Command
                 else if (str_contains($line, "rowspan")) {
                     preg_match("/(\d{4})/", $line, $matches);
                     $year = $matches[1];
-                    $this->info($year, "v");
+                    $this->info("Year: " . $year, "v");
                     $hasYearRow = true;
                 }
 
@@ -84,10 +86,19 @@ class ParseArticle extends Command
                         $won = true;
                     }
                     foreach($performers as $performer) {
-                        $performer = str_replace("{{won|align=left|", "", $performer);
-                        $performer = str_replace("}}", "", $performer);
-                        $performer = preg_replace("/\<small\>.*\<\/small\>/", "", $performer);
-                        $performer = preg_replace("/^\|/", "", $performer);
+                        $performer = str_replace("}}}}", "}}", $performer);
+                        if(preg_match("/\{\{sortname\s?\|(.*?)\|(.*)\|?.*}}/i", $performer, $matches)) {
+                            $this->info("Matches: " . print_r($matches, true), "vv");
+                            $firstname = trim($matches[1]);
+                            $lastname = explode("|", $matches[2])[0];
+                            $lastname = trim($lastname);
+                            $performer = "$firstname $lastname";
+                        }
+                        else {
+                            $performer = trim($performer);
+                        }
+
+
 
                         // TODO: Handle links
                         if(str_contains($performer, "[[")) {
@@ -97,10 +108,13 @@ class ParseArticle extends Command
                             }
                             $performer = $matches[1];
                         }
+
+                        $performer = str_replace("}}", "", $performer);
+                        $performer = preg_replace("/^\|/", "", $performer);
                         $performer = trim($performer);
-                        $this->info("$performer: " . ($won ? "won": "lost"), "v");
-                        if($performer) {
-                            $this->info("Inserting performer", "v");
+                        $this->info("-> $performer: " . ($won ? "won": "lost"), "v");
+                        if(!$test && $performer) {
+                            $this->info("--> Inserting performer", "vv");
                             $currentPerformer = Performer::firstOrCreate(['name' => $performer]);
                             Year::create([
                                 'performer_id' => $currentPerformer->id,
