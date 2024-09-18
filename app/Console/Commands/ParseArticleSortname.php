@@ -14,7 +14,7 @@ class ParseArticleSortname extends Command
      *
      * @var string
      */
-    protected $signature = 'app:parse-article-shortname
+    protected $signature = 'app:parse-article-sortname
     {article : The title of the article to parse}
     {--test : Test mode}
 
