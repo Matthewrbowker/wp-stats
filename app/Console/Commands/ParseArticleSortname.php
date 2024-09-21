@@ -82,7 +82,7 @@ class ParseArticleSortname extends Command
                     $this->info("Performer row", "vv");
                     $performers = explode("{{break}}", $line);
                     $won = false;
-                    if(str_contains($line, "{{won")) {
+                    if(str_contains($line, "{{won") || str_contains($line, "{{Won")) {
                         $won = true;
                     }
                     foreach($performers as $performer) {

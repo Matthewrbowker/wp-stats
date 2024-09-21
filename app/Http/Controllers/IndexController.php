@@ -15,10 +15,16 @@ class IndexController extends Controller
         $mostWins = Performer::withCount(
             ['years'=> function($query) {$query->where('won', true);}])->orderBy('years_count', 'desc')->first();;
 
+        $performers = Performer::withCount('years')->orderBy('years_count', 'desc')->get();
+
+        $performersWithMultipleYears = Performer::join('years', 'performers.id', '=', 'years.performer_id')->select('performers.*', 'years.year')->groupBy('performers.id', 'years.year')->havingRaw('COUNT(*) > 1')->get();
+
         return view('index', [
             'totalPerformers' => $totalPerformers,
             'mostNominations' => $mostNominations,
-            'mostWins' => $mostWins
+            'mostWins' => $mostWins,
+            'performersWithMultipleYears' => $performersWithMultipleYears,
+            'performers' => $performers
         ]);
     }
 }
